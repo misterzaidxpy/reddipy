@@ -1,0 +1,196 @@
+"""RedditClient: HTTP layer with rate limiting, pagination, and proxy support."""
+
+import random
+import sys
+import time
+
+import requests
+
+from redminer.exceptions import (
+    NetworkError,
+    PostNotFoundError,
+    ProxyError,
+    RateLimitError,
+    SubredditNotFoundError,
+    UserNotFoundError,
+)
+
+DEFAULT_USER_AGENT = (
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+    "AppleWebKit/537.36 (KHTML, like Gecko) "
+    "Chrome/131.0.0.0 Safari/537.36"
+)
+
+MAX_RETRIES = 3
+BACKOFF_SCHEDULE = [2, 4, 8]
+DEAD_PROXY_COOLDOWN = 60  # seconds
+
+
+class RedditClient:
+    """HTTP client for Reddit's public JSON endpoints."""
+
+    BASE_URL = "https://www.reddit.com"
+
+    def __init__(
+        self,
+        delay: float = 2.0,
+        proxy: str | None = None,
+        proxy_file: str | None = None,
+        user_agent: str | None = None,
+        verbose: bool = False,
+    ):
+        self.delay = delay
+        self.user_agent = user_agent or DEFAULT_USER_AGENT
+        self.verbose = verbose
+        self._last_request_time: float = 0.0
+        self._dead_proxies: dict[str, float] = {}
+
+        # Build proxy pool
+        self._proxies: list[str] = []
+        if proxy:
+            self._proxies = [proxy]
+        elif proxy_file:
+            self._proxies = self._load_proxy_file(proxy_file)
+
+    # ------------------------------------------------------------------
+    # Public API
+    # ------------------------------------------------------------------
+
+    def fetch(self, url: str, params: dict | None = None) -> dict:
+        """Single HTTP GET with rate limiting, retries, and proxy support."""
+        self._rate_limit()
+
+        proxy_dict = self._select_proxy()
+
+        for attempt in range(MAX_RETRIES + 1):
+            try:
+                resp = requests.get(
+                    url,
+                    headers={"User-Agent": self.user_agent},
+                    params=params or {},
+                    proxies=proxy_dict,
+                    timeout=30,
+                )
+            except (requests.ConnectionError, requests.Timeout) as exc:
+                # Mark the proxy dead if one was used
+                if proxy_dict:
+                    proxy_url = proxy_dict.get("http")
+                    if proxy_url:
+                        self._dead_proxies[proxy_url] = time.time()
+                raise NetworkError(str(exc)) from exc
+
+            status = resp.status_code
+
+            # Permanent errors (not retryable)
+            if status in (403, 404):
+                self._raise_not_found(url, status)
+
+            # Rate limited
+            if status == 429:
+                if attempt < MAX_RETRIES:
+                    self._log(f"Rate limited (429), retry {attempt + 1}/{MAX_RETRIES}")
+                    time.sleep(BACKOFF_SCHEDULE[attempt])
+                    continue
+                raise RateLimitError(
+                    f"Rate limited after {MAX_RETRIES} retries: {url}"
+                )
+
+            # Server errors
+            if status >= 500:
+                if attempt < MAX_RETRIES:
+                    self._log(f"Server error ({status}), retry {attempt + 1}/{MAX_RETRIES}")
+                    time.sleep(BACKOFF_SCHEDULE[attempt])
+                    continue
+                raise NetworkError(
+                    f"Server error {status} after {MAX_RETRIES} retries: {url}"
+                )
+
+            # Success
+            return resp.json()
+
+        # Should not be reachable, but just in case
+        raise NetworkError(f"Unexpected state after retries: {url}")  # pragma: no cover
+
+    def fetch_all(
+        self, url: str, params: dict | None = None, limit: int = 25
+    ) -> list[dict]:
+        """Paginated fetch that collects items across multiple pages."""
+        collected: list[dict] = []
+        after: str | None = None
+        params = dict(params) if params else {}
+
+        while len(collected) < limit:
+            remaining = limit - len(collected)
+            page_params = {**params, "limit": min(100, remaining)}
+            if after:
+                page_params["after"] = after
+
+            data = self.fetch(url, params=page_params)
+            children = data.get("data", {}).get("children", [])
+
+            for child in children:
+                if len(collected) >= limit:
+                    break
+                collected.append(child.get("data", {}))
+
+            after = data.get("data", {}).get("after")
+            if not after:
+                break
+
+        return collected
+
+    # ------------------------------------------------------------------
+    # Proxy management
+    # ------------------------------------------------------------------
+
+    def _select_proxy(self) -> dict | None:
+        """Pick a live proxy from the pool, or None if no proxies configured."""
+        if not self._proxies:
+            return None
+
+        now = time.time()
+        alive = [
+            p
+            for p in self._proxies
+            if p not in self._dead_proxies
+            or (now - self._dead_proxies[p]) >= DEAD_PROXY_COOLDOWN
+        ]
+
+        if not alive:
+            raise ProxyError("All proxies are dead")
+
+        chosen = random.choice(alive)
+        return {"http": chosen, "https": chosen}
+
+    # ------------------------------------------------------------------
+    # Internal helpers
+    # ------------------------------------------------------------------
+
+    def _rate_limit(self) -> None:
+        """Sleep if needed to enforce minimum delay between requests."""
+        if self._last_request_time > 0 and self.delay > 0:
+            elapsed = time.time() - self._last_request_time
+            if elapsed < self.delay:
+                time.sleep(self.delay - elapsed)
+        self._last_request_time = time.time()
+
+    def _raise_not_found(self, url: str, status: int) -> None:
+        """Raise the appropriate not-found exception based on URL pattern."""
+        if "/comments/" in url:
+            raise PostNotFoundError(f"Post not found ({status}): {url}")
+        if "/user/" in url or "/u/" in url:
+            raise UserNotFoundError(f"User not found ({status}): {url}")
+        # Default to subreddit
+        raise SubredditNotFoundError(f"Subreddit not found ({status}): {url}")
+
+    def _log(self, message: str) -> None:
+        """Print to stderr if verbose mode is on."""
+        if self.verbose:
+            print(message, file=sys.stderr)
+
+    @staticmethod
+    def _load_proxy_file(path: str) -> list[str]:
+        """Load proxy URLs from a file, one per line."""
+        with open(path, "r", encoding="utf-8") as f:
+            proxies = [line.strip() for line in f if line.strip()]
+        return proxies
