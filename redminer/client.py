@@ -21,6 +21,24 @@ DEFAULT_USER_AGENT = (
     "Chrome/149.0.0.0 Safari/537.36"
 )
 
+DEFAULT_HEADERS = {
+    "User-Agent": DEFAULT_USER_AGENT,
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+    "Accept-Language": "en-US,en;q=0.9",
+    "Accept-Encoding": "gzip, deflate, br",
+    "Cache-Control": "no-cache",
+    "Pragma": "no-cache",
+    "Sec-CH-UA": '"Google Chrome";v="149", "Chromium";v="149", "Not)A;Brand";v="24"',
+    "Sec-CH-UA-Mobile": "?0",
+    "Sec-CH-UA-Platform": '"Windows"',
+    "Sec-Fetch-Dest": "document",
+    "Sec-Fetch-Mode": "navigate",
+    "Sec-Fetch-Site": "none",
+    "Sec-Fetch-User": "?1",
+    "Upgrade-Insecure-Requests": "1",
+    "Connection": "keep-alive",
+}
+
 MAX_RETRIES = 3
 BACKOFF_SCHEDULE = [2, 4, 8]
 DEAD_PROXY_COOLDOWN = 60  # seconds
@@ -42,8 +60,10 @@ class RedditClient:
         cookie_file: str | None = None,
     ):
         self.delay = delay
-        self.user_agent = user_agent or DEFAULT_USER_AGENT
         self.verbose = verbose
+        self._headers = dict(DEFAULT_HEADERS)
+        if user_agent:
+            self._headers["User-Agent"] = user_agent
         self._last_request_time: float = 0.0
         self._dead_proxies: dict[str, float] = {}
 
@@ -75,7 +95,7 @@ class RedditClient:
             try:
                 resp = requests.get(
                     url,
-                    headers={"User-Agent": self.user_agent},
+                    headers=self._headers,
                     params=params or {},
                     proxies=proxy_dict,
                     cookies=self._cookies or None,
