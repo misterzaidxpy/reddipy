@@ -98,8 +98,9 @@ class RedditClient:
             # Rate limited
             if status == 429:
                 if attempt < MAX_RETRIES:
-                    self._log(f"Rate limited (429), retry {attempt + 1}/{MAX_RETRIES}")
-                    time.sleep(BACKOFF_SCHEDULE[attempt])
+                    wait = BACKOFF_SCHEDULE[attempt]
+                    self._log(f"Rate limited (429). Cooling down {wait}s before retry {attempt + 1}/{MAX_RETRIES}...")
+                    time.sleep(wait)
                     continue
                 raise RateLimitError(
                     f"Rate limited after {MAX_RETRIES} retries: {url}"
@@ -108,7 +109,8 @@ class RedditClient:
             # Server errors
             if status >= 500:
                 if attempt < MAX_RETRIES:
-                    self._log(f"Server error ({status}), retry {attempt + 1}/{MAX_RETRIES}")
+                    wait = BACKOFF_SCHEDULE[attempt]
+                    self._log(f"Server error ({status}). Cooling down {wait}s before retry {attempt + 1}/{MAX_RETRIES}...")
                     time.sleep(BACKOFF_SCHEDULE[attempt])
                     continue
                 raise NetworkError(

@@ -4,10 +4,14 @@ import argparse
 import json
 import sys
 
+from rich.console import Console
+
 from redminer.client import RedditClient
+from redminer.config import get_cookie, set_cookie, clear_config
 from redminer.exceptions import (
     NetworkError,
     PostNotFoundError,
+    ProxyError,
     RateLimitError,
     RedMinerError,
     SubredditNotFoundError,
@@ -16,6 +20,8 @@ from redminer.exceptions import (
 from redminer.exporters import ConsoleExporter, CSVExporter, JSONExporter
 from redminer.scrapers import PostScraper, SearchScraper, SubredditScraper, UserScraper
 from redminer.utils import generate_filename
+
+console = Console(stderr=True)
 
 
 def _add_common_flags(parser: argparse.ArgumentParser) -> None:
@@ -29,7 +35,7 @@ def _add_common_flags(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--proxy", default=None)
     parser.add_argument("--proxy-file", default=None)
     parser.add_argument("--cookie", default=None,
-                        help="Reddit session cookie value (reddit_session)")
+                        help="Reddit session cookie (overrides stored config)")
     parser.add_argument("--cookie-file", default=None,
                         help="Path to JSON file with cookies")
     parser.add_argument("--delay", type=float, default=2.0)
@@ -41,9 +47,18 @@ def build_parser() -> argparse.ArgumentParser:
     """Build the argument parser with all subcommands."""
     parser = argparse.ArgumentParser(
         prog="redminer",
-        description="Scrape Reddit data from the command line.",
+        description="RedMiner - Scrape Reddit data from the command line.",
     )
     subparsers = parser.add_subparsers(dest="command")
+
+    # configure
+    config_parser = subparsers.add_parser("configure",
+                                          help="Save Reddit session cookie for persistent use")
+    config_parser.add_argument("cookie", type=str,
+                               help="Your reddit_session cookie value")
+
+    # logout
+    subparsers.add_parser("logout", help="Remove stored authentication")
 
     # search
     search_parser = subparsers.add_parser("search", help="Search Reddit posts")
@@ -75,8 +90,16 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def _resolve_cookie(args: argparse.Namespace) -> str | None:
+    """Resolve cookie from args or stored config."""
+    if getattr(args, "cookie", None):
+        return args.cookie
+    if getattr(args, "cookie_file", None):
+        return None  # client handles cookie_file directly
+    return get_cookie()
+
+
 def handle_search(client: RedditClient, args: argparse.Namespace) -> list:
-    """Run a search scrape."""
     scraper = SearchScraper(client)
     return scraper.scrape(
         args.query,
@@ -88,14 +111,12 @@ def handle_search(client: RedditClient, args: argparse.Namespace) -> list:
 
 
 def handle_post(client: RedditClient, args: argparse.Namespace) -> tuple:
-    """Run a post scrape."""
     scraper = PostScraper(client)
     post, comments = scraper.scrape(args.url)
     return (post, comments)
 
 
 def handle_subreddit(client: RedditClient, args: argparse.Namespace) -> list:
-    """Run a subreddit scrape."""
     scraper = SubredditScraper(client)
     return scraper.scrape(
         args.name,
@@ -106,7 +127,6 @@ def handle_subreddit(client: RedditClient, args: argparse.Namespace) -> list:
 
 
 def handle_user(client: RedditClient, args: argparse.Namespace) -> list:
-    """Run a user scrape."""
     scraper = UserScraper(client)
     return scraper.scrape(
         args.username,
@@ -118,7 +138,6 @@ def handle_user(client: RedditClient, args: argparse.Namespace) -> list:
 
 def export_data(data, args: argparse.Namespace) -> None:
     """Export scraped data using the selected exporter."""
-    # Select exporter
     if args.export == "json":
         exporter = JSONExporter()
         ext = "json"
@@ -129,19 +148,17 @@ def export_data(data, args: argparse.Namespace) -> None:
         exporter = ConsoleExporter()
         ext = None
 
-    # Determine output path
     output_path = getattr(args, "output", None)
     if output_path is None and ext is not None:
         output_path = generate_filename(args.command, ext)
 
-    # Handle post command specially (tuple of post, comments)
     if isinstance(data, tuple):
         post, comments = data
         if args.export == "console":
-            print("=== Post ===")
+            console.print("\n[bold]Post[/bold]")
             exporter.export([post])
             if comments:
-                print("\n=== Comments ===")
+                console.print(f"\n[bold]Comments[/bold] ({len(comments)})")
                 exporter.export(comments)
         elif args.export == "json":
             combined = {
@@ -151,21 +168,20 @@ def export_data(data, args: argparse.Namespace) -> None:
             if output_path:
                 with open(output_path, "w", encoding="utf-8") as f:
                     json.dump(combined, f, indent=2)
-                print(f"Saved to {output_path}", file=sys.stderr)
+                console.print(f"[green]Saved to {output_path}[/green]")
             else:
                 print(json.dumps(combined, indent=2))
         else:
-            # CSV: export comments if available, otherwise the post
             if comments:
                 exporter.export(comments, output_path)
             else:
                 exporter.export([post], output_path)
             if output_path:
-                print(f"Saved to {output_path}", file=sys.stderr)
+                console.print(f"[green]Saved to {output_path}[/green]")
     else:
         exporter.export(data, output_path)
         if output_path and ext:
-            print(f"Saved to {output_path}", file=sys.stderr)
+            console.print(f"[green]Saved to {output_path}[/green]")
 
 
 def main() -> None:
@@ -177,15 +193,27 @@ def main() -> None:
         parser.print_help()
         sys.exit(1)
 
+    # Handle configure/logout commands
+    if args.command == "configure":
+        set_cookie(args.cookie)
+        console.print("[green]Cookie saved successfully.[/green] You can now use redminer without --cookie.")
+        return
+
+    if args.command == "logout":
+        clear_config()
+        console.print("[yellow]Stored authentication removed.[/yellow]")
+        return
+
     try:
+        cookie = _resolve_cookie(args)
         client = RedditClient(
             delay=args.delay,
             proxy=args.proxy,
             proxy_file=args.proxy_file,
             user_agent=args.user_agent,
             verbose=args.verbose,
-            cookie=args.cookie,
-            cookie_file=args.cookie_file,
+            cookie=cookie,
+            cookie_file=getattr(args, "cookie_file", None),
         )
 
         if args.command == "search":
@@ -200,11 +228,11 @@ def main() -> None:
         export_data(data, args)
 
     except (SubredditNotFoundError, PostNotFoundError, UserNotFoundError) as e:
-        print(f"Error: {e}", file=sys.stderr)
+        console.print(f"[red]Error:[/red] {e}")
         sys.exit(3)
-    except (NetworkError, RateLimitError) as e:
-        print(f"Error: {e}", file=sys.stderr)
+    except (NetworkError, RateLimitError, ProxyError) as e:
+        console.print(f"[red]Error:[/red] {e}")
         sys.exit(2)
     except RedMinerError as e:
-        print(f"Error: {e}", file=sys.stderr)
+        console.print(f"[red]Error:[/red] {e}")
         sys.exit(1)

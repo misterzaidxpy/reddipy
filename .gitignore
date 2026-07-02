@@ -5,3 +5,8 @@ dist/
 build/
 .pytest_cache/
 cookies.json
+*.cookie
+.redminer/
+config.json
+.env
+*.secret

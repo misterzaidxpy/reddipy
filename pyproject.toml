@@ -7,7 +7,7 @@ name = "redminer"
 version = "1.0.0"
 description = "A CLI tool for scraping Reddit data via public JSON endpoints"
 requires-python = ">=3.10"
-dependencies = ["requests>=2.28.0"]
+dependencies = ["requests>=2.28.0", "rich>=13.0"]
 
 [project.optional-dependencies]
 socks = ["requests[socks]"]
