@@ -18,7 +18,7 @@ from redminer.exceptions import (
 DEFAULT_USER_AGENT = (
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
     "AppleWebKit/537.36 (KHTML, like Gecko) "
-    "Chrome/131.0.0.0 Safari/537.36"
+    "Chrome/149.0.0.0 Safari/537.36"
 )
 
 MAX_RETRIES = 3
@@ -38,6 +38,8 @@ class RedditClient:
         proxy_file: str | None = None,
         user_agent: str | None = None,
         verbose: bool = False,
+        cookie: str | None = None,
+        cookie_file: str | None = None,
     ):
         self.delay = delay
         self.user_agent = user_agent or DEFAULT_USER_AGENT
@@ -51,6 +53,13 @@ class RedditClient:
             self._proxies = [proxy]
         elif proxy_file:
             self._proxies = self._load_proxy_file(proxy_file)
+
+        # Build cookie jar
+        self._cookies: dict[str, str] = {}
+        if cookie:
+            self._cookies["reddit_session"] = cookie
+        elif cookie_file:
+            self._cookies = self._load_cookie_file(cookie_file)
 
     # ------------------------------------------------------------------
     # Public API
@@ -69,6 +78,7 @@ class RedditClient:
                     headers={"User-Agent": self.user_agent},
                     params=params or {},
                     proxies=proxy_dict,
+                    cookies=self._cookies or None,
                     timeout=30,
                 )
             except (requests.ConnectionError, requests.Timeout) as exc:
@@ -194,3 +204,22 @@ class RedditClient:
         with open(path, "r", encoding="utf-8") as f:
             proxies = [line.strip() for line in f if line.strip()]
         return proxies
+
+    @staticmethod
+    def _load_cookie_file(path: str) -> dict[str, str]:
+        """Load cookies from a JSON file.
+
+        Expects either:
+        - A JSON object: {"reddit_session": "value", ...}
+        - A JSON array (browser export): [{"name": "reddit_session", "value": "..."}, ...]
+        """
+        import json as _json
+
+        with open(path, "r", encoding="utf-8") as f:
+            data = _json.load(f)
+
+        if isinstance(data, dict):
+            return data
+        if isinstance(data, list):
+            return {item["name"]: item["value"] for item in data if "name" in item and "value" in item}
+        return {}

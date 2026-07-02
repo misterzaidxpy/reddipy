@@ -28,6 +28,10 @@ def _add_common_flags(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--output", "-o", default=None)
     parser.add_argument("--proxy", default=None)
     parser.add_argument("--proxy-file", default=None)
+    parser.add_argument("--cookie", default=None,
+                        help="Reddit session cookie value (reddit_session)")
+    parser.add_argument("--cookie-file", default=None,
+                        help="Path to JSON file with cookies")
     parser.add_argument("--delay", type=float, default=2.0)
     parser.add_argument("--user-agent", default=None)
     parser.add_argument("--verbose", "-v", action="store_true", default=False)
@@ -180,6 +184,8 @@ def main() -> None:
             proxy_file=args.proxy_file,
             user_agent=args.user_agent,
             verbose=args.verbose,
+            cookie=args.cookie,
+            cookie_file=args.cookie_file,
         )
 
         if args.command == "search":

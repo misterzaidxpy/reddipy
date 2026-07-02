@@ -1,6 +1,16 @@
 """Console exporter: prints a formatted table to stdout."""
 
+import sys
+
 from redminer.exporters.base import BaseExporter
+
+
+def _safe_print(text: str) -> None:
+    """Print text, replacing unencodable characters on Windows."""
+    try:
+        print(text)
+    except UnicodeEncodeError:
+        print(text.encode(sys.stdout.encoding or "utf-8", errors="replace").decode(sys.stdout.encoding or "utf-8", errors="replace"))
 
 
 def _truncate(text: str | None, max_len: int) -> str:
@@ -137,9 +147,9 @@ class ConsoleExporter(BaseExporter):
         widths = [col_widths[h] for h in headers]
         fmt = "  ".join(f"{{:<{w}}}" for w in widths)
 
-        print(fmt.format(*headers))
-        print("  ".join("-" * w for w in widths))
+        _safe_print(fmt.format(*headers))
+        _safe_print("  ".join("-" * w for w in widths))
         for row in rows:
             # Pad/trim each cell to match the column width
             cells = [str(cell)[:widths[i]] for i, cell in enumerate(row)]
-            print(fmt.format(*cells))
+            _safe_print(fmt.format(*cells))
