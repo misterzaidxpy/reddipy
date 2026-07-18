@@ -183,10 +183,18 @@ class TestNotFoundErrors:
             client.fetch("https://www.reddit.com/user/nonexistent.json")
 
     @patch("redminer.client.requests.get")
-    def test_403_subreddit_raises_subreddit_not_found(self, mock_get):
+    def test_403_without_cookie_raises_network_error(self, mock_get):
         mock_get.return_value = _mock_response(403)
 
         client = RedditClient(delay=0)
+        with pytest.raises(NetworkError, match="authenticate"):
+            client.fetch("https://www.reddit.com/r/privateSub.json")
+
+    @patch("redminer.client.requests.get")
+    def test_403_with_cookie_raises_subreddit_not_found(self, mock_get):
+        mock_get.return_value = _mock_response(403)
+
+        client = RedditClient(delay=0, cookie="fake_session")
         with pytest.raises(SubredditNotFoundError):
             client.fetch("https://www.reddit.com/r/privateSub.json")
 

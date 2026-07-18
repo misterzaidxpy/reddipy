@@ -111,6 +111,13 @@ class RedditClient:
 
             status = resp.status_code
 
+            # 403 without cookies = auth issue, not "not found"
+            if status == 403 and not self._cookies:
+                raise NetworkError(
+                    "Reddit returned 403 Forbidden. You likely need to authenticate. "
+                    "Run: Reddit.configure(cookie='your_reddit_session') or use --cookie"
+                )
+
             # Permanent errors (not retryable)
             if status in (403, 404):
                 self._raise_not_found(url, status)

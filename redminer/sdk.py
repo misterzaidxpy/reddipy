@@ -26,6 +26,7 @@ class Reddit:
     def __init__(
         self,
         cookie: str | None = None,
+        cookie_file: str | None = None,
         delay: float = 2.0,
         proxy: str | None = None,
         proxy_file: str | None = None,
@@ -40,6 +41,7 @@ class Reddit:
             user_agent=user_agent,
             verbose=verbose,
             cookie=resolved_cookie,
+            cookie_file=cookie_file,
         )
 
     @staticmethod
