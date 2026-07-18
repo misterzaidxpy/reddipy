@@ -4,47 +4,107 @@ A Python tool for scraping Reddit data. Works as both a **Python SDK** and a **C
 
 Extracts posts, comments, and user activity from Reddit's public JSON endpoints. Exports to JSON, CSV, or formatted console tables.
 
+## Table of Contents
+
+- [Installation](#installation)
+- [Authentication](#authentication)
+- [Python SDK](#python-sdk)
+  - [Search](#search)
+  - [Scrape a Post](#scrape-a-post)
+  - [Subreddit Posts](#subreddit-posts)
+  - [User Activity](#user-activity)
+  - [Export Data](#export-data)
+  - [Proxy Support (SDK)](#proxy-support-sdk)
+  - [Data Models](#data-models)
+  - [Error Handling](#error-handling)
+- [CLI Usage](#cli-usage)
+  - [Search (CLI)](#search-cli)
+  - [Post (CLI)](#post-cli)
+  - [Subreddit (CLI)](#subreddit-cli)
+  - [User (CLI)](#user-cli)
+  - [Export (CLI)](#export-cli)
+  - [Proxy Support (CLI)](#proxy-support-cli)
+  - [All CLI Flags](#all-cli-flags)
+- [Rate Limiting](#rate-limiting)
+- [Project Structure](#project-structure)
+
 ## Installation
 
 ```bash
 pip install .
 ```
 
-Or for development:
+For development:
 
 ```bash
 pip install -e ".[dev]"
 ```
 
-## Quick Start
+For SOCKS5 proxy support:
 
-### 1. Get Your Reddit Session Cookie
+```bash
+pip install ".[socks]"
+```
 
-RedMiner requires a `reddit_session` cookie from your browser:
+## Authentication
 
-1. Open Reddit in your browser and log in
-2. Open DevTools (F12) > Application > Cookies > `reddit.com`
-3. Find the `reddit_session` cookie and copy its value
+RedMiner requires a `reddit_session` cookie from your browser. This is the only cookie needed.
 
-### 2. Configure (One-Time Setup)
+### Step 1: Get the Cookie
+
+1. Open [reddit.com](https://www.reddit.com) in your browser and log in
+2. Open DevTools (`F12`) > **Application** tab > **Cookies** > `https://www.reddit.com`
+3. Find the cookie named `reddit_session`
+4. Copy its **Value** (a long JWT string starting with `eyJ...`)
+
+### Step 2: Configure (One-Time)
 
 **SDK:**
 
 ```python
 from redminer import Reddit
 
-Reddit.configure(cookie="paste_your_reddit_session_value_here")
+Reddit.configure(cookie="eyJhbGciOiJS...")
 ```
 
 **CLI:**
 
 ```bash
-redminer configure "paste_your_reddit_session_value_here"
+redminer configure "eyJhbGciOiJS..."
 ```
 
-This saves the cookie to `~/.redminer/config.json`. You only need to do this once.
+The cookie is saved to `~/.redminer/config.json`. You only need to do this once. All future SDK and CLI calls will use it automatically.
+
+### Auth Management
+
+```python
+Reddit.configure(cookie="...")   # save cookie
+Reddit.is_configured()           # check if cookie exists (returns True/False)
+Reddit.logout()                  # remove stored cookie
+```
+
+```bash
+redminer configure "cookie"      # save
+redminer logout                  # remove
+```
+
+### Override Stored Cookie
+
+If you need to use a different cookie for a single session:
+
+```python
+reddit = Reddit(cookie="different_cookie_here")
+```
+
+```bash
+redminer search "python" --cookie "different_cookie_here"
+```
+
+---
 
 ## Python SDK
+
+### Initialize
 
 ```python
 from redminer import Reddit
@@ -52,153 +112,401 @@ from redminer import Reddit
 reddit = Reddit()
 ```
 
+All methods below assume you have already configured authentication.
+
 ### Search
 
+Search Reddit for posts matching a keyword.
+
 ```python
+# Basic search
 posts = reddit.search("machine learning", limit=10)
 for post in posts:
-    print(f"[{post.score}] {post.title} - r/{post.subreddit}")
+    print(f"[{post.score}] {post.title}")
+    print(f"  r/{post.subreddit} by {post.author}")
 ```
 
-Search within a specific subreddit:
+**Search within a specific subreddit:**
 
 ```python
-posts = reddit.search("async", subreddit="python", sort="top", time_filter="month", limit=20)
+posts = reddit.search("async", subreddit="python", limit=10)
 ```
 
-**Parameters:** `query`, `sort` (relevance/hot/new/top/comments), `time_filter` (day/week/month/year/all), `limit`, `subreddit`
+**All parameters:**
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `query` | str | required | Search keywords |
+| `limit` | int | 25 | Max results (up to ~1000) |
+| `sort` | str | "relevance" | relevance, hot, new, top, comments |
+| `time_filter` | str | "all" | day, week, month, year, all |
+| `subreddit` | str | None | Scope search to a subreddit |
+
+**Returns:** `list[Post]`
 
 ### Scrape a Post
+
+Extract a single post with its full comment tree.
 
 ```python
 post, comments = reddit.post("https://www.reddit.com/r/python/comments/abc123/title/")
 
+# Post data
 print(post.title)
+print(post.author)
 print(post.score)
-print(f"{len(comments)} comments")
+print(post.selftext)       # post body
+print(post.flair)           # post flair (or None)
+print(post.num_comments)
+print(post.upvote_ratio)
 
-for comment in comments:
-    print(f"  [{comment.score}] {comment.author}: {comment.body[:80]}")
+# Comments
+print(f"{len(comments)} top-level comments loaded")
+
+for comment in comments[:5]:
+    print(f"[{comment.score}] {comment.author}: {comment.body[:80]}")
+    print(f"  depth: {comment.depth}, is_submitter: {comment.is_submitter}")
 ```
+
+Accepts any Reddit post URL format:
+
+```python
+# All of these work
+reddit.post("https://www.reddit.com/r/python/comments/abc123/title/")
+reddit.post("https://old.reddit.com/r/python/comments/abc123/")
+reddit.post("https://reddit.com/r/python/comments/abc123/title")
+reddit.post("/r/python/comments/abc123/title/")   # bare permalink
+```
+
+**Returns:** `tuple[Post, list[Comment]]`
 
 ### Subreddit Posts
 
+Fetch posts from a subreddit with sort and time filters.
+
 ```python
+# Hot posts (default)
+posts = reddit.subreddit("python")
+
+# Top posts this week
 posts = reddit.subreddit("python", sort="top", time_filter="week", limit=50)
+
+# New posts
+posts = reddit.subreddit("datascience", sort="new", limit=20)
+
+# Rising posts
+posts = reddit.subreddit("technology", sort="rising", limit=10)
+
 for post in posts:
-    print(f"{post.title} ({post.num_comments} comments)")
+    print(f"[{post.score:>5}] {post.title}")
+    print(f"        {post.num_comments} comments | r/{post.subreddit}")
 ```
 
-**Parameters:** `name`, `sort` (hot/new/top/rising/controversial), `time_filter`, `limit`
+**All parameters:**
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `name` | str | required | Subreddit name (without `r/`) |
+| `sort` | str | "hot" | hot, new, top, rising, controversial |
+| `time_filter` | str | "all" | day, week, month, year, all (for top/controversial) |
+| `limit` | int | 25 | Max posts |
+
+**Returns:** `list[Post]`
 
 ### User Activity
 
+Fetch a Reddit user's recent posts and comments.
+
 ```python
-activity = reddit.user("spez", limit=10, activity_type="posts")
+# All activity
+activity = reddit.user("spez", limit=10)
+
 for item in activity:
-    print(f"[{item.type}] {item.title or item.body[:50]}")
+    print(f"[{item.type}] r/{item.subreddit} ({item.score} pts)")
+    if item.type == "post":
+        print(f"  {item.title}")
+    else:
+        print(f"  {item.body[:80]}")
 ```
 
-**Parameters:** `username`, `limit`, `sort` (new/hot/top), `activity_type` (posts/comments/all)
+**Filter by activity type:**
+
+```python
+# Posts only
+posts = reddit.user("spez", limit=10, activity_type="posts")
+
+# Comments only
+comments = reddit.user("spez", limit=10, activity_type="comments")
+
+# Both (default)
+all_activity = reddit.user("spez", limit=10, activity_type="all")
+```
+
+**All parameters:**
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `username` | str | required | Reddit username (without `u/`) |
+| `limit` | int | 25 | Max items |
+| `sort` | str | "new" | new, hot, top |
+| `activity_type` | str | "all" | posts, comments, all |
+
+**Returns:** `list[UserActivity]`
 
 ### Export Data
 
+Save scraped data to JSON, CSV, or display as a formatted table.
+
+**JSON:**
+
 ```python
-from redminer.exporters import JSONExporter, CSVExporter
+from redminer.exporters import JSONExporter
 
 posts = reddit.search("python", limit=20)
-
-# Save to JSON
 JSONExporter().export(posts, "results.json")
 
-# Save to CSV
-CSVExporter().export(posts, "results.csv")
+# Or print to stdout (no file path)
+JSONExporter().export(posts)
 ```
 
-### Configuration Options
+**CSV:**
 
 ```python
-reddit = Reddit(
-    cookie="override_session_cookie",   # Override stored cookie
-    delay=1.0,                          # Seconds between requests (default: 2.0)
-    proxy="http://1.2.3.4:8080",        # Single proxy
-    proxy_file="proxies.txt",           # Proxy list (one per line, random rotation)
-    verbose=True,                       # Print progress to stderr
-)
+from redminer.exporters import CSVExporter
+
+posts = reddit.subreddit("python", sort="top", limit=50)
+CSVExporter().export(posts, "posts.csv")
 ```
+
+**Console table (rich formatted):**
+
+```python
+from redminer.exporters import ConsoleExporter
+
+posts = reddit.search("python", limit=10)
+ConsoleExporter().export(posts)
+```
+
+**Exporting comments:**
+
+```python
+post, comments = reddit.post("https://reddit.com/r/python/comments/abc123/title/")
+
+# Comments to JSON (includes post and comment data)
+import json
+combined = {
+    "post": post.to_dict(),
+    "comments": [c.to_dict() for c in comments]
+}
+with open("post_data.json", "w") as f:
+    json.dump(combined, f, indent=2)
+
+# Comments to CSV (flattened, with depth/parent_id columns)
+CSVExporter().export(comments, "comments.csv")
+```
+
+### Proxy Support (SDK)
+
+Route requests through proxies to distribute load or bypass IP restrictions.
+
+**Single proxy:**
+
+```python
+reddit = Reddit(proxy="http://1.2.3.4:8080")
+```
+
+**Multiple proxies with random rotation:**
+
+```python
+reddit = Reddit(proxy_file="proxies.txt")
+```
+
+Each request picks a random proxy from the file. Failed proxies are automatically skipped for 60 seconds.
+
+**proxies.txt format:**
+
+```
+http://1.2.3.4:8080
+http://5.6.7.8:3128
+socks5://9.10.11.12:1080
+```
+
+SOCKS5 requires: `pip install "redminer[socks]"`
 
 ### Data Models
 
-Every scraped item is returned as a clean dataclass:
+Every scraped item is a Python dataclass with typed fields. All models have a `.to_dict()` method for serialization.
 
-**Post:** `id`, `title`, `author`, `subreddit`, `score`, `upvote_ratio`, `num_comments`, `created_utc`, `selftext`, `url`, `permalink`, `flair`
+**Post**
 
-**Comment:** `id`, `author`, `body`, `score`, `created_utc`, `parent_id`, `depth`, `is_submitter`, `replies`
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | str | Reddit post ID |
+| `title` | str | Post title |
+| `author` | str | Author username |
+| `subreddit` | str | Subreddit name |
+| `score` | int | Net upvotes |
+| `upvote_ratio` | float | Upvote percentage (0.0 - 1.0) |
+| `num_comments` | int | Total comment count |
+| `created_utc` | datetime | Post creation time (UTC) |
+| `selftext` | str | Post body text (empty for link posts) |
+| `url` | str | Post URL or linked URL |
+| `permalink` | str | Reddit permalink |
+| `flair` | str or None | Post flair text |
 
-**UserActivity:** `type`, `id`, `author`, `subreddit`, `score`, `created_utc`, `title`, `body`, `permalink`
+**Comment**
 
-All models have `.to_dict()` for serialization.
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | str | Comment ID |
+| `author` | str | Author username |
+| `body` | str | Comment text |
+| `score` | int | Net upvotes |
+| `created_utc` | datetime | Comment creation time (UTC) |
+| `parent_id` | str | Parent post/comment ID |
+| `depth` | int | Nesting depth (0 = top-level) |
+| `is_submitter` | bool | True if comment author is the post author |
+| `replies` | list[Comment] | Nested reply comments |
 
-### Auth Management
+**UserActivity**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `type` | str | "post" or "comment" |
+| `id` | str | Item ID |
+| `author` | str | Username |
+| `subreddit` | str | Subreddit name |
+| `score` | int | Net upvotes |
+| `created_utc` | datetime | Creation time (UTC) |
+| `title` | str or None | Post title (None for comments) |
+| `body` | str or None | Comment body (None for posts) |
+| `permalink` | str | Reddit permalink |
+
+**Serialization:**
 
 ```python
-Reddit.configure(cookie="your_cookie")  # Save cookie
-Reddit.is_configured()                  # Check if cookie exists
-Reddit.logout()                         # Remove stored cookie
+post_dict = post.to_dict()
+# {"id": "abc123", "title": "...", "created_utc": "2026-07-03T12:00:00+00:00", ...}
+
+# datetime fields become ISO 8601 strings in to_dict()
+# Nested comment replies are recursively serialized
 ```
+
+### Error Handling
+
+RedMiner raises specific exceptions you can catch:
+
+```python
+from redminer.exceptions import (
+    RedMinerError,           # base exception (catch-all)
+    SubredditNotFoundError,  # subreddit is private, banned, or doesn't exist
+    PostNotFoundError,       # post URL is invalid or deleted
+    UserNotFoundError,       # user is suspended or doesn't exist
+    RateLimitError,          # rate limited after 3 retries with backoff
+    NetworkError,            # connection failure or timeout
+    ProxyError,              # all proxies are dead
+)
+
+try:
+    posts = reddit.subreddit("nonexistent_sub_12345")
+except SubredditNotFoundError:
+    print("Subreddit doesn't exist")
+except RateLimitError:
+    print("Rate limited, try again later or reduce --delay")
+except NetworkError:
+    print("Connection failed")
+```
+
+### Advanced Configuration
+
+```python
+reddit = Reddit(
+    cookie="override_cookie",          # override stored cookie
+    delay=1.0,                         # seconds between requests (default: 2.0)
+    proxy="http://1.2.3.4:8080",       # single proxy
+    proxy_file="proxies.txt",          # proxy list with random rotation
+    user_agent="Custom Agent/1.0",     # custom User-Agent string
+    verbose=True,                      # print progress to stderr
+)
+```
+
+---
 
 ## CLI Usage
 
-### Configure
+All CLI commands use stored authentication by default. Run `redminer configure` first.
+
+### Search (CLI)
 
 ```bash
-redminer configure "your_reddit_session_cookie"
-redminer logout
-```
+# Basic search
+redminer search "python"
 
-### Search
+# With filters
+redminer search "machine learning" --limit 20 --sort top --time week
 
-```bash
-redminer search "python async" --limit 20 --sort top --time week
+# Search within a subreddit
 redminer search "flask" --subreddit python --limit 10
+redminer search "hooks" -s react --sort new
 ```
 
-### Scrape a Post
+### Post (CLI)
 
 ```bash
+# Scrape a post with all comments
 redminer post "https://www.reddit.com/r/python/comments/abc123/title/"
+
+# Export to JSON
+redminer post "https://reddit.com/r/python/comments/abc123/title/" --export json -o post.json
 ```
 
-### Subreddit
+### Subreddit (CLI)
 
 ```bash
-redminer subreddit python --sort hot --limit 50
-redminer subreddit datascience --sort top --time month
+# Hot posts (default)
+redminer subreddit python
+
+# Top posts this month
+redminer subreddit datascience --sort top --time month --limit 50
+
+# New posts
+redminer subreddit technology --sort new --limit 20
+
+# Rising
+redminer subreddit programming --sort rising
 ```
 
-### User Activity
+### User (CLI)
 
 ```bash
-redminer user spez --limit 10 --type posts
+# All activity
+redminer user spez --limit 10
+
+# Posts only
+redminer user spez --type posts --limit 20
+
+# Comments only, sorted by top
 redminer user spez --type comments --sort top
 ```
 
-### Export
+### Export (CLI)
 
 ```bash
-# JSON
+# JSON file
 redminer search "python" --export json -o results.json
 
-# CSV
+# CSV file
 redminer subreddit python --export csv -o posts.csv
 
-# Console (default)
+# Console table (default, no flag needed)
 redminer search "python" --limit 5
+
+# Auto-generated filename (omit -o)
+redminer search "python" --export json
+# Creates: redminer_search_20260703_143000.json
 ```
 
-When `--export json` or `--export csv` is used without `-o`, a file is auto-generated (e.g., `redminer_search_20260703_143000.json`).
-
-### Proxy Support
+### Proxy Support (CLI)
 
 ```bash
 # Single proxy
@@ -208,7 +516,7 @@ redminer search "python" --proxy http://1.2.3.4:8080
 redminer search "python" --proxy-file proxies.txt
 ```
 
-`proxies.txt` format (one per line):
+**proxies.txt** (one proxy per line):
 
 ```
 http://1.2.3.4:8080
@@ -216,48 +524,85 @@ http://5.6.7.8:3128
 socks5://9.10.11.12:1080
 ```
 
-SOCKS5 proxies require: `pip install "redminer[socks]"`
+SOCKS5 requires: `pip install "redminer[socks]"`
 
 ### All CLI Flags
 
+**Common flags (available on all commands):**
+
 | Flag | Description | Default |
 |------|-------------|---------|
-| `--limit` | Max results | 25 |
-| `--sort` | Sort order | varies |
+| `--limit` | Max number of results | 25 |
+| `--sort` | Sort order | varies by command |
 | `--time` / `-t` | Time filter (day/week/month/year/all) | all |
 | `--export` | Output format (json/csv/console) | console |
-| `--output` / `-o` | Output file path | auto |
-| `--cookie` | Reddit session cookie | stored config |
-| `--cookie-file` | JSON file with cookies | - |
+| `--output` / `-o` | Output file path | auto-generated |
+| `--cookie` | Override stored reddit_session cookie | stored config |
+| `--cookie-file` | Path to JSON file with cookies | - |
 | `--proxy` | Single proxy URL | - |
-| `--proxy-file` | Proxy list file | - |
+| `--proxy-file` | Path to proxy list file | - |
 | `--delay` | Seconds between requests | 2.0 |
-| `--user-agent` | Custom User-Agent | Chrome UA |
-| `--verbose` / `-v` | Show progress | false |
+| `--user-agent` | Custom User-Agent header | Chrome 149 |
+| `--verbose` / `-v` | Show progress and retry info | false |
+
+**Command-specific flags:**
+
+| Command | Flag | Description | Default |
+|---------|------|-------------|---------|
+| `search` | `--subreddit` / `-s` | Scope search to a subreddit | all of Reddit |
+| `user` | `--type` | Filter activity (posts/comments/all) | all |
+
+**Exit codes:**
+
+| Code | Meaning |
+|------|---------|
+| 0 | Success |
+| 1 | General error (invalid args, unexpected failure) |
+| 2 | Network error (connection failed, rate limited, proxies dead) |
+| 3 | Not found (subreddit/post/user doesn't exist) |
+
+---
 
 ## Rate Limiting
 
-RedMiner has built-in rate limiting:
+RedMiner has built-in protections to avoid getting blocked:
 
-- **Request delay:** 2-second gap between requests (configurable with `--delay`)
-- **Cooldown on 429:** Automatic exponential backoff (2s, 4s, 8s) when rate-limited
-- **Max retries:** 3 attempts before raising an error
-- **Proxy rotation:** Dead proxies are skipped for 60 seconds before retry
+- **Request delay:** 2-second gap between requests (configurable with `--delay` or `delay=` parameter)
+- **Cooldown on 429:** Automatic exponential backoff (2s, 4s, 8s) when rate-limited by Reddit
+- **Max retries:** 3 attempts with increasing wait times before raising an error
+- **Dead proxy cooldown:** Failed proxies are skipped for 60 seconds before being retried
+- **Realistic headers:** All requests include 14 browser-standard headers (Accept, Sec-CH-UA, Sec-Fetch-*, etc.) matching a real Chrome browser fingerprint
+
+**Tips for staying safe:**
+
+- Keep `delay` at 2.0 or higher for normal use
+- Use `--verbose` to see when retries and cooldowns happen
+- For large scrapes (500+ items), use proxies to distribute load
+- Don't run multiple instances on the same account simultaneously
 
 ## Project Structure
 
 ```
 redminer/
-    __init__.py       # Package init, exports Reddit class
+    __init__.py       # Package exports: Reddit, Post, Comment, UserActivity
     sdk.py            # Python SDK (Reddit class)
-    cli.py            # CLI entry point
-    client.py         # HTTP client (rate limiting, pagination, proxies)
-    config.py         # Persistent config (~/.redminer/config.json)
+    cli.py            # CLI entry point (argparse subcommands)
+    client.py         # HTTP client (headers, rate limiting, pagination, proxies)
+    config.py         # Persistent auth (~/.redminer/config.json)
     models.py         # Post, Comment, UserActivity dataclasses
-    exceptions.py     # Custom exceptions
-    utils.py          # URL parsing, helpers
-    scrapers/         # Search, Post, Subreddit, User scrapers
-    exporters/        # JSON, CSV, Console exporters
+    exceptions.py     # RedMinerError, SubredditNotFoundError, etc.
+    utils.py          # URL parsing, timestamp conversion, filename generation
+    scrapers/
+        base.py       # BaseScraper abstract class
+        search.py     # SearchScraper
+        post.py       # PostScraper
+        subreddit.py  # SubredditScraper
+        user.py       # UserScraper
+    exporters/
+        base.py       # BaseExporter abstract class
+        json_exporter.py
+        csv_exporter.py
+        console.py    # Rich formatted tables
 ```
 
 ## License
