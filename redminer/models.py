@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field, asdict
 from datetime import datetime, timezone
-from typing import Self
 
 
 @dataclass
@@ -25,7 +24,7 @@ class Post:
     flair: str | None
 
     @classmethod
-    def from_raw(cls, data: dict) -> Self:
+    def from_raw(cls, data: dict):
         """Create a Post from a raw Reddit JSON data dict."""
         return cls(
             id=data["id"],
@@ -64,7 +63,7 @@ class Comment:
     replies: list[Comment] = field(default_factory=list)
 
     @classmethod
-    def from_raw(cls, data: dict) -> Self:
+    def from_raw(cls, data: dict):
         """Create a Comment from a raw Reddit JSON data dict.
 
         Handles Reddit's nested reply structure: ``replies`` can be an
@@ -116,7 +115,7 @@ class UserActivity:
     permalink: str
 
     @classmethod
-    def from_raw(cls, data: dict) -> Self:
+    def from_raw(cls, data: dict):
         """Create a UserActivity from a raw Reddit JSON entry.
 
         ``data`` is the outer object containing ``kind`` and ``data`` keys.

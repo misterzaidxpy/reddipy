@@ -1,50 +1,53 @@
-# RedMiner
+<h1 align="center">RedMiner</h1>
 
-A Python tool for scraping Reddit data. Works as both a **Python SDK** and a **CLI tool**.
+<p align="center">
+  <strong>Scrape Reddit posts, comments, and user activity. Python SDK + CLI.</strong>
+</p>
 
-Extracts posts, comments, and user activity from Reddit's public JSON endpoints. Exports to JSON, CSV, or formatted console tables.
+<p align="center">
+  <a href="https://pypi.org/project/redminer/"><img src="https://img.shields.io/pypi/v/redminer.svg?style=flat-square&color=blue" alt="PyPI version"></a>
+  <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/python-3.10%20|%203.11%20|%203.12%20|%203.13-blue.svg?style=flat-square" alt="Python versions"></a>
+  <a href="https://github.com/zaidkx37/redminer/actions"><img src="https://img.shields.io/github/actions/workflow/status/zaidkx37/redminer/ci.yml?style=flat-square&label=CI" alt="CI"></a>
+  <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/license-MIT-green.svg?style=flat-square" alt="License: MIT"></a>
+  <a href="https://pypi.org/project/redminer/"><img src="https://img.shields.io/pypi/dm/redminer?style=flat-square&color=orange&label=downloads" alt="Downloads"></a>
+</p>
 
-## Table of Contents
+<p align="center">
+  Built on Reddit's public JSON endpoints. Two interfaces: <b>Python SDK</b> and <b>CLI</b>.
+</p>
 
-- [Installation](#installation)
-- [Authentication](#authentication)
-- [Python SDK](#python-sdk)
-  - [Search](#search)
-  - [Scrape a Post](#scrape-a-post)
-  - [Subreddit Posts](#subreddit-posts)
-  - [User Activity](#user-activity)
-  - [Export Data](#export-data)
-  - [Proxy Support (SDK)](#proxy-support-sdk)
-  - [Data Models](#data-models)
-  - [Error Handling](#error-handling)
-- [CLI Usage](#cli-usage)
-  - [Search (CLI)](#search-cli)
-  - [Post (CLI)](#post-cli)
-  - [Subreddit (CLI)](#subreddit-cli)
-  - [User (CLI)](#user-cli)
-  - [Export (CLI)](#export-cli)
-  - [Proxy Support (CLI)](#proxy-support-cli)
-  - [All CLI Flags](#all-cli-flags)
-- [Rate Limiting](#rate-limiting)
-- [Project Structure](#project-structure)
+---
+
+## Features
+
+- **Search** Reddit by keyword with sort, time, and subreddit filters
+- **Scrape posts** with full comment trees, scores, and metadata
+- **Subreddit browsing** with hot, new, top, rising, and controversial sorting
+- **User profiles** with post/comment activity filtering
+- **Export** to JSON, CSV, or rich console tables
+- **Auto-pagination** to collect beyond the 100-per-request limit
+- **Proxy rotation** with single proxy, proxy file, and dead proxy cooldown
+- **Rate limiting** with configurable delay and exponential backoff
+- **Realistic headers** matching a real Chrome browser fingerprint
+- **Lightweight** with only `requests` and `rich` as dependencies
+
+---
 
 ## Installation
 
-```bash
-pip install .
-```
-
-For development:
+Recommended to **[install using pip](https://pypi.org/project/redminer/)**
 
 ```bash
-pip install -e ".[dev]"
+pip install redminer
 ```
 
 For SOCKS5 proxy support:
 
 ```bash
-pip install ".[socks]"
+pip install "redminer[socks]"
 ```
+
+**Requirements:** Python 3.10+
 
 ## Authentication
 
