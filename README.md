@@ -5,11 +5,11 @@
 </p>
 
 <p align="center">
-  <a href="https://pypi.org/project/reddit-miner/"><img src="https://img.shields.io/pypi/v/reddit-miner.svg?style=flat-square&color=blue" alt="PyPI version"></a>
+  <a href="https://pypi.org/project/reddipy/"><img src="https://img.shields.io/pypi/v/reddipy.svg?style=flat-square&color=blue" alt="PyPI version"></a>
   <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/python-3.10%20|%203.11%20|%203.12%20|%203.13-blue.svg?style=flat-square" alt="Python versions"></a>
   <a href="https://github.com/zaidkx37/redminer/actions"><img src="https://img.shields.io/github/actions/workflow/status/zaidkx37/redminer/ci.yml?style=flat-square&label=CI" alt="CI"></a>
   <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/license-MIT-green.svg?style=flat-square" alt="License: MIT"></a>
-  <a href="https://pypi.org/project/reddit-miner/"><img src="https://img.shields.io/pypi/dm/reddit-miner?style=flat-square&color=orange&label=downloads" alt="Downloads"></a>
+  <a href="https://pypi.org/project/reddipy/"><img src="https://img.shields.io/pypi/dm/reddipy?style=flat-square&color=orange&label=downloads" alt="Downloads"></a>
 </p>
 
 <p align="center">
@@ -35,10 +35,10 @@
 
 ## Installation
 
-Recommended to **[install using pip](https://pypi.org/project/reddit-miner/)**
+Recommended to **[install using pip](https://pypi.org/project/reddipy/)**
 
 ```bash
-pip install reddit-miner
+pip install reddipy
 ```
 
 For SOCKS5 proxy support:
