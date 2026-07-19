@@ -3,7 +3,7 @@ requires = ["setuptools>=68.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "redminer"
+name = "reddit-miner"
 version = "1.0.0"
 description = "Scrape Reddit posts, comments, and user activity — no API key needed. Python SDK + CLI tool."
 readme = "README.md"
