@@ -1,7 +1,7 @@
 """Search scraper for Reddit's search endpoint."""
 
-from redminer.models import Post
-from redminer.scrapers.base import BaseScraper
+from reddipy.models import Post
+from reddipy.scrapers.base import BaseScraper
 
 
 class SearchScraper(BaseScraper):

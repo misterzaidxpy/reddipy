@@ -38,7 +38,7 @@ socks = ["requests[socks]"]
 dev = ["pytest>=7.0"]
 
 [project.scripts]
-redminer = "redminer.cli:main"
+reddipy = "reddipy.cli:main"
 
 [project.urls]
 Homepage = "https://github.com/zaidkx37/redminer"

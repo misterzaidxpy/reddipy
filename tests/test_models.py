@@ -1,10 +1,10 @@
-"""Comprehensive tests for redminer.models (Post, Comment, UserActivity)."""
+"""Comprehensive tests for reddipy.models (Post, Comment, UserActivity)."""
 
 from datetime import datetime, timezone
 
 import pytest
 
-from redminer.models import Comment, Post, UserActivity
+from reddipy.models import Comment, Post, UserActivity
 
 
 # ---------------------------------------------------------------------------

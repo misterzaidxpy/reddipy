@@ -7,8 +7,8 @@ from datetime import datetime, timezone
 
 import pytest
 
-from redminer.models import Post, Comment, UserActivity
-from redminer.exporters.json_exporter import JSONExporter
+from reddipy.models import Post, Comment, UserActivity
+from reddipy.exporters.json_exporter import JSONExporter
 
 
 # ---------------------------------------------------------------------------

@@ -1,4 +1,4 @@
-<h1 align="center">RedMiner</h1>
+<h1 align="center">Reddipy</h1>
 
 <p align="center">
   <strong>Scrape Reddit posts, comments, and user activity. Python SDK + CLI.</strong>
@@ -7,7 +7,7 @@
 <p align="center">
   <a href="https://pypi.org/project/reddipy/"><img src="https://img.shields.io/pypi/v/reddipy.svg?style=flat-square&color=blue" alt="PyPI version"></a>
   <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/python-3.10%20|%203.11%20|%203.12%20|%203.13-blue.svg?style=flat-square" alt="Python versions"></a>
-  <a href="https://github.com/zaidkx37/redminer/actions"><img src="https://img.shields.io/github/actions/workflow/status/zaidkx37/redminer/ci.yml?style=flat-square&label=CI" alt="CI"></a>
+  <a href="https://github.com/zaidkx37/redminer/actions"><img src="https://img.shields.io/github/actions/workflow/status/zaidkx37/reddipy/ci.yml?style=flat-square&label=CI" alt="CI"></a>
   <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/license-MIT-green.svg?style=flat-square" alt="License: MIT"></a>
   <a href="https://pypi.org/project/reddipy/"><img src="https://img.shields.io/pypi/dm/reddipy?style=flat-square&color=orange&label=downloads" alt="Downloads"></a>
 </p>
@@ -44,14 +44,14 @@ pip install reddipy
 For SOCKS5 proxy support:
 
 ```bash
-pip install "redminer[socks]"
+pip install "reddipy[socks]"
 ```
 
 **Requirements:** Python 3.10+
 
 ## Authentication
 
-RedMiner requires a `reddit_session` cookie from your browser. This is the only cookie needed.
+Reddipy requires a `reddit_session` cookie from your browser. This is the only cookie needed.
 
 ### Step 1: Get the Cookie
 
@@ -65,7 +65,7 @@ RedMiner requires a `reddit_session` cookie from your browser. This is the only 
 **SDK:**
 
 ```python
-from redminer import Reddit
+from reddipy import Reddit
 
 Reddit.configure(cookie="eyJhbGciOiJS...")
 ```
@@ -73,10 +73,10 @@ Reddit.configure(cookie="eyJhbGciOiJS...")
 **CLI:**
 
 ```bash
-redminer configure "eyJhbGciOiJS..."
+reddipy configure "eyJhbGciOiJS..."
 ```
 
-The cookie is saved to `~/.redminer/config.json`. You only need to do this once. All future SDK and CLI calls will use it automatically.
+The cookie is saved to `~/.reddipy/config.json`. You only need to do this once. All future SDK and CLI calls will use it automatically.
 
 ### Auth Management
 
@@ -87,8 +87,8 @@ Reddit.logout()                  # remove stored cookie
 ```
 
 ```bash
-redminer configure "cookie"      # save
-redminer logout                  # remove
+reddipy configure "cookie"      # save
+reddipy logout                  # remove
 ```
 
 ### Override Stored Cookie
@@ -100,7 +100,7 @@ reddit = Reddit(cookie="different_cookie_here")
 ```
 
 ```bash
-redminer search "python" --cookie "different_cookie_here"
+reddipy search "python" --cookie "different_cookie_here"
 ```
 
 ---
@@ -110,7 +110,7 @@ redminer search "python" --cookie "different_cookie_here"
 ### Initialize
 
 ```python
-from redminer import Reddit
+from reddipy import Reddit
 
 reddit = Reddit()
 ```
@@ -263,7 +263,7 @@ Save scraped data to JSON, CSV, or display as a formatted table.
 **JSON:**
 
 ```python
-from redminer.exporters import JSONExporter
+from reddipy.exporters import JSONExporter
 
 posts = reddit.search("python", limit=20)
 JSONExporter().export(posts, "results.json")
@@ -275,7 +275,7 @@ JSONExporter().export(posts)
 **CSV:**
 
 ```python
-from redminer.exporters import CSVExporter
+from reddipy.exporters import CSVExporter
 
 posts = reddit.subreddit("python", sort="top", limit=50)
 CSVExporter().export(posts, "posts.csv")
@@ -284,7 +284,7 @@ CSVExporter().export(posts, "posts.csv")
 **Console table (rich formatted):**
 
 ```python
-from redminer.exporters import ConsoleExporter
+from reddipy.exporters import ConsoleExporter
 
 posts = reddit.search("python", limit=10)
 ConsoleExporter().export(posts)
@@ -334,7 +334,7 @@ http://5.6.7.8:3128
 socks5://9.10.11.12:1080
 ```
 
-SOCKS5 requires: `pip install "redminer[socks]"`
+SOCKS5 requires: `pip install "reddipy[socks]"`
 
 ### Data Models
 
@@ -397,11 +397,11 @@ post_dict = post.to_dict()
 
 ### Error Handling
 
-RedMiner raises specific exceptions you can catch:
+Reddipy raises specific exceptions you can catch:
 
 ```python
-from redminer.exceptions import (
-    RedMinerError,           # base exception (catch-all)
+from reddipy.exceptions import (
+    ReddipyError,           # base exception (catch-all)
     SubredditNotFoundError,  # subreddit is private, banned, or doesn't exist
     PostNotFoundError,       # post URL is invalid or deleted
     UserNotFoundError,       # user is suspended or doesn't exist
@@ -437,86 +437,86 @@ reddit = Reddit(
 
 ## CLI Usage
 
-All CLI commands use stored authentication by default. Run `redminer configure` first.
+All CLI commands use stored authentication by default. Run `reddipy configure` first.
 
 ### Search (CLI)
 
 ```bash
 # Basic search
-redminer search "python"
+reddipy search "python"
 
 # With filters
-redminer search "machine learning" --limit 20 --sort top --time week
+reddipy search "machine learning" --limit 20 --sort top --time week
 
 # Search within a subreddit
-redminer search "flask" --subreddit python --limit 10
-redminer search "hooks" -s react --sort new
+reddipy search "flask" --subreddit python --limit 10
+reddipy search "hooks" -s react --sort new
 ```
 
 ### Post (CLI)
 
 ```bash
 # Scrape a post with all comments
-redminer post "https://www.reddit.com/r/python/comments/abc123/title/"
+reddipy post "https://www.reddit.com/r/python/comments/abc123/title/"
 
 # Export to JSON
-redminer post "https://reddit.com/r/python/comments/abc123/title/" --export json -o post.json
+reddipy post "https://reddit.com/r/python/comments/abc123/title/" --export json -o post.json
 ```
 
 ### Subreddit (CLI)
 
 ```bash
 # Hot posts (default)
-redminer subreddit python
+reddipy subreddit python
 
 # Top posts this month
-redminer subreddit datascience --sort top --time month --limit 50
+reddipy subreddit datascience --sort top --time month --limit 50
 
 # New posts
-redminer subreddit technology --sort new --limit 20
+reddipy subreddit technology --sort new --limit 20
 
 # Rising
-redminer subreddit programming --sort rising
+reddipy subreddit programming --sort rising
 ```
 
 ### User (CLI)
 
 ```bash
 # All activity
-redminer user spez --limit 10
+reddipy user spez --limit 10
 
 # Posts only
-redminer user spez --type posts --limit 20
+reddipy user spez --type posts --limit 20
 
 # Comments only, sorted by top
-redminer user spez --type comments --sort top
+reddipy user spez --type comments --sort top
 ```
 
 ### Export (CLI)
 
 ```bash
 # JSON file
-redminer search "python" --export json -o results.json
+reddipy search "python" --export json -o results.json
 
 # CSV file
-redminer subreddit python --export csv -o posts.csv
+reddipy subreddit python --export csv -o posts.csv
 
 # Console table (default, no flag needed)
-redminer search "python" --limit 5
+reddipy search "python" --limit 5
 
 # Auto-generated filename (omit -o)
-redminer search "python" --export json
-# Creates: redminer_search_20260703_143000.json
+reddipy search "python" --export json
+# Creates: reddipy_search_20260703_143000.json
 ```
 
 ### Proxy Support (CLI)
 
 ```bash
 # Single proxy
-redminer search "python" --proxy http://1.2.3.4:8080
+reddipy search "python" --proxy http://1.2.3.4:8080
 
 # Multiple proxies with random rotation
-redminer search "python" --proxy-file proxies.txt
+reddipy search "python" --proxy-file proxies.txt
 ```
 
 **proxies.txt** (one proxy per line):
@@ -527,7 +527,7 @@ http://5.6.7.8:3128
 socks5://9.10.11.12:1080
 ```
 
-SOCKS5 requires: `pip install "redminer[socks]"`
+SOCKS5 requires: `pip install "reddipy[socks]"`
 
 ### All CLI Flags
 
@@ -568,7 +568,7 @@ SOCKS5 requires: `pip install "redminer[socks]"`
 
 ## Rate Limiting
 
-RedMiner has built-in protections to avoid getting blocked:
+Reddipy has built-in protections to avoid getting blocked:
 
 - **Request delay:** 2-second gap between requests (configurable with `--delay` or `delay=` parameter)
 - **Cooldown on 429:** Automatic exponential backoff (2s, 4s, 8s) when rate-limited by Reddit
@@ -586,14 +586,14 @@ RedMiner has built-in protections to avoid getting blocked:
 ## Project Structure
 
 ```
-redminer/
+reddipy/
     __init__.py       # Package exports: Reddit, Post, Comment, UserActivity
     sdk.py            # Python SDK (Reddit class)
     cli.py            # CLI entry point (argparse subcommands)
     client.py         # HTTP client (headers, rate limiting, pagination, proxies)
-    config.py         # Persistent auth (~/.redminer/config.json)
+    config.py         # Persistent auth (~/.reddipy/config.json)
     models.py         # Post, Comment, UserActivity dataclasses
-    exceptions.py     # RedMinerError, SubredditNotFoundError, etc.
+    exceptions.py     # ReddipyError, SubredditNotFoundError, etc.
     utils.py          # URL parsing, timestamp conversion, filename generation
     scrapers/
         base.py       # BaseScraper abstract class

@@ -3,7 +3,7 @@
 import csv
 import sys
 
-from redminer.exporters.base import BaseExporter
+from reddipy.exporters.base import BaseExporter
 
 
 class CSVExporter(BaseExporter):

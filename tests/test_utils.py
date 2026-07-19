@@ -1,7 +1,7 @@
-"""Tests for redminer/utils.py"""
+"""Tests for reddipy/utils.py"""
 import re
 import pytest
-from redminer.utils import parse_post_url, format_timestamp, generate_filename
+from reddipy.utils import parse_post_url, format_timestamp, generate_filename
 
 
 class TestParsePostUrl:
@@ -69,12 +69,12 @@ class TestFormatTimestamp:
 class TestGenerateFilename:
     def test_pattern_structure(self):
         result = generate_filename("search", "json")
-        pattern = r"^redminer_search_\d{8}_\d{6}\.json$"
+        pattern = r"^reddipy_search_\d{8}_\d{6}\.json$"
         assert re.match(pattern, result), f"Filename '{result}' does not match expected pattern"
 
     def test_command_in_filename(self):
         result = generate_filename("posts", "csv")
-        assert result.startswith("redminer_posts_")
+        assert result.startswith("reddipy_posts_")
         assert result.endswith(".csv")
 
     def test_extension_applied(self):

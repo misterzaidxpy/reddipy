@@ -1,8 +1,8 @@
 """Post scraper for fetching a single Reddit post and its comments."""
 
-from redminer.models import Comment, Post
-from redminer.scrapers.base import BaseScraper
-from redminer.utils import parse_post_url
+from reddipy.models import Comment, Post
+from reddipy.scrapers.base import BaseScraper
+from reddipy.utils import parse_post_url
 
 
 class PostScraper(BaseScraper):

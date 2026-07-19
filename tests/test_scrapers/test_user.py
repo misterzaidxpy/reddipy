@@ -2,8 +2,8 @@
 
 from unittest.mock import MagicMock
 
-from redminer.models import UserActivity
-from redminer.scrapers.user import UserScraper
+from reddipy.models import UserActivity
+from reddipy.scrapers.user import UserScraper
 
 
 def _make_user_response(children):

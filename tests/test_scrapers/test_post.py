@@ -2,8 +2,8 @@
 
 from unittest.mock import MagicMock
 
-from redminer.models import Post, Comment
-from redminer.scrapers.post import PostScraper
+from reddipy.models import Post, Comment
+from reddipy.scrapers.post import PostScraper
 
 
 def _make_reddit_post_response():

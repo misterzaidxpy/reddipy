@@ -6,7 +6,7 @@ import time
 
 import requests
 
-from redminer.exceptions import (
+from reddipy.exceptions import (
     NetworkError,
     PostNotFoundError,
     ProxyError,

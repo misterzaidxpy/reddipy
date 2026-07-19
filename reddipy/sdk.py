@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-from redminer.client import RedditClient
-from redminer.config import get_cookie, set_cookie, clear_config
-from redminer.models import Comment, Post, UserActivity
-from redminer.scrapers import PostScraper, SearchScraper, SubredditScraper, UserScraper
+from reddipy.client import RedditClient
+from reddipy.config import get_cookie, set_cookie, clear_config
+from reddipy.models import Comment, Post, UserActivity
+from reddipy.scrapers import PostScraper, SearchScraper, SubredditScraper, UserScraper
 
 
 class Reddit:
@@ -13,7 +13,7 @@ class Reddit:
 
     Usage::
 
-        from redminer import Reddit
+        from reddipy import Reddit
 
         reddit = Reddit()
         reddit.configure(cookie="your_reddit_session_cookie")
@@ -49,7 +49,7 @@ class Reddit:
         """Save Reddit session cookie for persistent use.
 
         Only needs to be called once. The cookie is stored at
-        ``~/.redminer/config.json`` and loaded automatically on future runs.
+        ``~/.reddipy/config.json`` and loaded automatically on future runs.
 
         Args:
             cookie: Your ``reddit_session`` cookie value from the browser.

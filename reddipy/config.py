@@ -1,9 +1,9 @@
-"""Persistent configuration for RedMiner (stored at ~/.redminer/config.json)."""
+"""Persistent configuration for RedMiner (stored at ~/.reddipy/config.json)."""
 
 import json
 import os
 
-CONFIG_DIR = os.path.join(os.path.expanduser("~"), ".redminer")
+CONFIG_DIR = os.path.join(os.path.expanduser("~"), ".reddipy")
 CONFIG_FILE = os.path.join(CONFIG_DIR, "config.json")
 
 
@@ -12,7 +12,7 @@ def _ensure_dir() -> None:
 
 
 def load_config() -> dict:
-    """Load config from ~/.redminer/config.json. Returns empty dict if missing."""
+    """Load config from ~/.reddipy/config.json. Returns empty dict if missing."""
     if not os.path.exists(CONFIG_FILE):
         return {}
     with open(CONFIG_FILE, "r", encoding="utf-8") as f:
@@ -20,7 +20,7 @@ def load_config() -> dict:
 
 
 def save_config(config: dict) -> None:
-    """Save config to ~/.redminer/config.json."""
+    """Save config to ~/.reddipy/config.json."""
     _ensure_dir()
     with open(CONFIG_FILE, "w", encoding="utf-8") as f:
         json.dump(config, f, indent=2)

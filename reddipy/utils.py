@@ -1,4 +1,4 @@
-"""Utility functions for redminer."""
+"""Utility functions for reddipy."""
 from datetime import datetime
 from urllib.parse import urlparse
 
@@ -63,8 +63,8 @@ def format_timestamp(utc: float) -> str:
 def generate_filename(command: str, ext: str) -> str:
     """Generate an auto filename for export output.
 
-    Pattern: redminer_{command}_{YYYYMMDD}_{HHMMSS}.{ext}
-    Example: redminer_search_20240115_143000.json
+    Pattern: reddipy_{command}_{YYYYMMDD}_{HHMMSS}.{ext}
+    Example: reddipy_search_20240115_143000.json
     """
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    return f"redminer_{command}_{timestamp}.{ext}"
+    return f"reddipy_{command}_{timestamp}.{ext}"

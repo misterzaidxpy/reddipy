@@ -2,8 +2,8 @@
 
 from unittest.mock import MagicMock
 
-from redminer.models import Post
-from redminer.scrapers.search import SearchScraper
+from reddipy.models import Post
+from reddipy.scrapers.search import SearchScraper
 
 
 def _make_raw_post(post_id="abc123"):

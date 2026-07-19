@@ -1,7 +1,7 @@
 """User scraper for fetching a Reddit user's activity history."""
 
-from redminer.models import UserActivity
-from redminer.scrapers.base import BaseScraper
+from reddipy.models import UserActivity
+from reddipy.scrapers.base import BaseScraper
 
 
 class UserScraper(BaseScraper):

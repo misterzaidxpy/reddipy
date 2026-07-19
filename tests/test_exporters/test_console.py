@@ -5,8 +5,8 @@ from io import StringIO
 
 from rich.console import Console
 
-from redminer.models import Post, Comment, UserActivity
-from redminer.exporters.console import ConsoleExporter
+from reddipy.models import Post, Comment, UserActivity
+from reddipy.exporters.console import ConsoleExporter
 
 
 def _capture_export(data: list) -> str:
@@ -30,7 +30,7 @@ def _capture_export(data: list) -> str:
         table.add_column("Subreddit", style="magenta", width=18)
         table.add_column("Score", justify="right", style="yellow", width=7)
         table.add_column("Comments", justify="right", style="blue", width=9)
-        from redminer.exporters.console import _truncate
+        from reddipy.exporters.console import _truncate
         for item in d:
             table.add_row(item.id, _truncate(item.title, 62), item.author,
                           f"r/{item.subreddit}", str(item.score), str(item.num_comments))
@@ -45,7 +45,7 @@ def _capture_export(data: list) -> str:
         table.add_column("Comment", min_width=30, max_width=55)
         table.add_column("Score", justify="right", style="yellow", width=7)
         table.add_column("Depth", justify="right", style="blue", width=6)
-        from redminer.exporters.console import _truncate
+        from reddipy.exporters.console import _truncate
         for item in d:
             table.add_row(item.id, item.author, _truncate(item.body, 52),
                           str(item.score), str(item.depth))
@@ -61,7 +61,7 @@ def _capture_export(data: list) -> str:
         table.add_column("Subreddit", style="magenta", width=18)
         table.add_column("Score", justify="right", style="yellow", width=7)
         table.add_column("Content", min_width=30, max_width=50)
-        from redminer.exporters.console import _truncate
+        from reddipy.exporters.console import _truncate
         for item in d:
             content = item.title if item.title is not None else item.body
             table.add_row(item.type, item.id, item.author, f"r/{item.subreddit}",

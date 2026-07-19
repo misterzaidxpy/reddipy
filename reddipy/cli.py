@@ -6,9 +6,9 @@ import sys
 
 from rich.console import Console
 
-from redminer.client import RedditClient
-from redminer.config import get_cookie, set_cookie, clear_config
-from redminer.exceptions import (
+from reddipy.client import RedditClient
+from reddipy.config import get_cookie, set_cookie, clear_config
+from reddipy.exceptions import (
     NetworkError,
     PostNotFoundError,
     ProxyError,
@@ -17,9 +17,9 @@ from redminer.exceptions import (
     SubredditNotFoundError,
     UserNotFoundError,
 )
-from redminer.exporters import ConsoleExporter, CSVExporter, JSONExporter
-from redminer.scrapers import PostScraper, SearchScraper, SubredditScraper, UserScraper
-from redminer.utils import generate_filename
+from reddipy.exporters import ConsoleExporter, CSVExporter, JSONExporter
+from reddipy.scrapers import PostScraper, SearchScraper, SubredditScraper, UserScraper
+from reddipy.utils import generate_filename
 
 console = Console(stderr=True)
 
@@ -46,7 +46,7 @@ def _add_common_flags(parser: argparse.ArgumentParser) -> None:
 def build_parser() -> argparse.ArgumentParser:
     """Build the argument parser with all subcommands."""
     parser = argparse.ArgumentParser(
-        prog="redminer",
+        prog="reddipy",
         description="RedMiner - Scrape Reddit data from the command line.",
     )
     subparsers = parser.add_subparsers(dest="command")
@@ -196,7 +196,7 @@ def main() -> None:
     # Handle configure/logout commands
     if args.command == "configure":
         set_cookie(args.cookie)
-        console.print("[green]Cookie saved successfully.[/green] You can now use redminer without --cookie.")
+        console.print("[green]Cookie saved successfully.[/green] You can now use reddipy without --cookie.")
         return
 
     if args.command == "logout":

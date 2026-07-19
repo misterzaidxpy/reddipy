@@ -5,12 +5,12 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from redminer.cli import build_parser, export_data, main
-from redminer.exceptions import (
+from reddipy.cli import build_parser, export_data, main
+from reddipy.exceptions import (
     NetworkError,
     SubredditNotFoundError,
 )
-from redminer.exporters.console import ConsoleExporter
+from reddipy.exporters.console import ConsoleExporter
 
 
 # ------------------------------------------------------------------
@@ -98,44 +98,44 @@ class TestMainFlow:
     """Verify main() dispatches correctly and handles errors."""
 
     def test_no_subcommand_exits(self):
-        with patch("sys.argv", ["redminer"]):
+        with patch("sys.argv", ["reddipy"]):
             with pytest.raises(SystemExit) as exc_info:
                 main()
             assert exc_info.value.code == 1
 
-    @patch("redminer.cli.SubredditScraper")
-    @patch("redminer.cli.RedditClient")
+    @patch("reddipy.cli.SubredditScraper")
+    @patch("reddipy.cli.RedditClient")
     def test_not_found_exits_3(self, mock_client_cls, mock_scraper_cls):
         mock_scraper = MagicMock()
         mock_scraper.scrape.side_effect = SubredditNotFoundError("r/nonexistent not found")
         mock_scraper_cls.return_value = mock_scraper
 
-        with patch("sys.argv", ["redminer", "subreddit", "nonexistent"]):
+        with patch("sys.argv", ["reddipy", "subreddit", "nonexistent"]):
             with pytest.raises(SystemExit) as exc_info:
                 main()
             assert exc_info.value.code == 3
 
-    @patch("redminer.cli.SearchScraper")
-    @patch("redminer.cli.RedditClient")
+    @patch("reddipy.cli.SearchScraper")
+    @patch("reddipy.cli.RedditClient")
     def test_network_error_exits_2(self, mock_client_cls, mock_scraper_cls):
         mock_scraper = MagicMock()
         mock_scraper.scrape.side_effect = NetworkError("Connection failed")
         mock_scraper_cls.return_value = mock_scraper
 
-        with patch("sys.argv", ["redminer", "search", "test"]):
+        with patch("sys.argv", ["reddipy", "search", "test"]):
             with pytest.raises(SystemExit) as exc_info:
                 main()
             assert exc_info.value.code == 2
 
-    @patch("redminer.cli.generate_filename", return_value="redminer_search_20240101_000000.json")
-    @patch("redminer.cli.SearchScraper")
-    @patch("redminer.cli.RedditClient")
+    @patch("reddipy.cli.generate_filename", return_value="reddipy_search_20240101_000000.json")
+    @patch("reddipy.cli.SearchScraper")
+    @patch("reddipy.cli.RedditClient")
     def test_auto_filename_when_no_output(self, mock_client_cls, mock_scraper_cls, mock_gen_fn):
         mock_scraper = MagicMock()
         mock_scraper.scrape.return_value = []
         mock_scraper_cls.return_value = mock_scraper
 
-        with patch("sys.argv", ["redminer", "search", "test", "--export", "json"]):
+        with patch("sys.argv", ["reddipy", "search", "test", "--export", "json"]):
             main()
 
         mock_gen_fn.assert_called_once_with("search", "json")
@@ -159,7 +159,7 @@ class TestExportData:
         import argparse
         return argparse.Namespace(**defaults)
 
-    @patch("redminer.cli.ConsoleExporter")
+    @patch("reddipy.cli.ConsoleExporter")
     def test_export_list_console(self, mock_exporter_cls):
         mock_exp = MagicMock(spec=ConsoleExporter)
         mock_exporter_cls.return_value = mock_exp
@@ -169,7 +169,7 @@ class TestExportData:
 
         mock_exp.export.assert_called_once_with(["item1", "item2"], None)
 
-    @patch("redminer.cli.ConsoleExporter")
+    @patch("reddipy.cli.ConsoleExporter")
     def test_export_tuple_console(self, mock_exporter_cls):
         mock_exp = MagicMock(spec=ConsoleExporter)
         mock_exporter_cls.return_value = mock_exp

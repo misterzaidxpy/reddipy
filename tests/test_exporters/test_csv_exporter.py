@@ -8,8 +8,8 @@ from datetime import datetime, timezone
 
 import pytest
 
-from redminer.models import Post, Comment, UserActivity
-from redminer.exporters.csv_exporter import CSVExporter
+from reddipy.models import Post, Comment, UserActivity
+from reddipy.exporters.csv_exporter import CSVExporter
 
 
 # ---------------------------------------------------------------------------

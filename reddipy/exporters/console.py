@@ -3,7 +3,7 @@
 from rich.console import Console
 from rich.table import Table
 
-from redminer.exporters.base import BaseExporter
+from reddipy.exporters.base import BaseExporter
 
 
 def _truncate(text: str | None, max_len: int) -> str:

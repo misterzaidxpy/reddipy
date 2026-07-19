@@ -1,7 +1,7 @@
 """Subreddit scraper for fetching posts from a subreddit listing."""
 
-from redminer.models import Post
-from redminer.scrapers.base import BaseScraper
+from reddipy.models import Post
+from reddipy.scrapers.base import BaseScraper
 
 
 class SubredditScraper(BaseScraper):

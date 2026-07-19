@@ -3,7 +3,7 @@
 import json
 import sys
 
-from redminer.exporters.base import BaseExporter
+from reddipy.exporters.base import BaseExporter
 
 
 class JSONExporter(BaseExporter):

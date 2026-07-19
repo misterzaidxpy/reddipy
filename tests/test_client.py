@@ -7,8 +7,8 @@ from unittest.mock import MagicMock, patch, call
 import pytest
 import requests
 
-from redminer.client import RedditClient
-from redminer.exceptions import (
+from reddipy.client import RedditClient
+from reddipy.exceptions import (
     NetworkError,
     ProxyError,
     RateLimitError,
@@ -43,7 +43,7 @@ def _page_json(children_data, after=None):
 # ---------------------------------------------------------------------------
 
 class TestFetchBasics:
-    @patch("redminer.client.requests.get")
+    @patch("reddipy.client.requests.get")
     def test_fetch_returns_json(self, mock_get):
         payload = {"data": {"children": []}}
         mock_get.return_value = _mock_response(200, payload)
@@ -54,7 +54,7 @@ class TestFetchBasics:
         assert result == payload
         mock_get.assert_called_once()
 
-    @patch("redminer.client.requests.get")
+    @patch("reddipy.client.requests.get")
     def test_fetch_sends_correct_headers_and_params(self, mock_get):
         mock_get.return_value = _mock_response(200, {"ok": True})
 
@@ -71,8 +71,8 @@ class TestFetchBasics:
 # ---------------------------------------------------------------------------
 
 class TestRateLimiting:
-    @patch("redminer.client.time.sleep")
-    @patch("redminer.client.requests.get")
+    @patch("reddipy.client.time.sleep")
+    @patch("reddipy.client.requests.get")
     def test_rate_limiting_sleeps_between_requests(self, mock_get, mock_sleep):
         mock_get.return_value = _mock_response(200, {"ok": True})
 
@@ -89,8 +89,8 @@ class TestRateLimiting:
 # ---------------------------------------------------------------------------
 
 class TestRetryOn429:
-    @patch("redminer.client.time.sleep")
-    @patch("redminer.client.requests.get")
+    @patch("reddipy.client.time.sleep")
+    @patch("reddipy.client.requests.get")
     def test_retries_on_429_then_succeeds(self, mock_get, mock_sleep):
         resp_429 = _mock_response(429)
         resp_200 = _mock_response(200, {"ok": True})
@@ -110,8 +110,8 @@ class TestRetryOn429:
 # ---------------------------------------------------------------------------
 
 class TestRetryExhaustion429:
-    @patch("redminer.client.time.sleep")
-    @patch("redminer.client.requests.get")
+    @patch("reddipy.client.time.sleep")
+    @patch("reddipy.client.requests.get")
     def test_raises_rate_limit_error_after_3_retries(self, mock_get, mock_sleep):
         mock_get.return_value = _mock_response(429)
 
@@ -128,8 +128,8 @@ class TestRetryExhaustion429:
 # ---------------------------------------------------------------------------
 
 class TestRetry5xx:
-    @patch("redminer.client.time.sleep")
-    @patch("redminer.client.requests.get")
+    @patch("reddipy.client.time.sleep")
+    @patch("reddipy.client.requests.get")
     def test_retries_on_500_then_succeeds(self, mock_get, mock_sleep):
         resp_500 = _mock_response(500)
         resp_200 = _mock_response(200, {"ok": True})
@@ -141,8 +141,8 @@ class TestRetry5xx:
         assert result == {"ok": True}
         assert mock_get.call_count == 2
 
-    @patch("redminer.client.time.sleep")
-    @patch("redminer.client.requests.get")
+    @patch("reddipy.client.time.sleep")
+    @patch("reddipy.client.requests.get")
     def test_raises_network_error_after_5xx_exhaustion(self, mock_get, mock_sleep):
         mock_get.return_value = _mock_response(502)
 
@@ -158,7 +158,7 @@ class TestRetry5xx:
 # ---------------------------------------------------------------------------
 
 class TestNotFoundErrors:
-    @patch("redminer.client.requests.get")
+    @patch("reddipy.client.requests.get")
     def test_404_subreddit_raises_subreddit_not_found(self, mock_get):
         mock_get.return_value = _mock_response(404)
 
@@ -166,7 +166,7 @@ class TestNotFoundErrors:
         with pytest.raises(SubredditNotFoundError):
             client.fetch("https://www.reddit.com/r/nonexistent.json")
 
-    @patch("redminer.client.requests.get")
+    @patch("reddipy.client.requests.get")
     def test_404_post_raises_post_not_found(self, mock_get):
         mock_get.return_value = _mock_response(404)
 
@@ -174,7 +174,7 @@ class TestNotFoundErrors:
         with pytest.raises(PostNotFoundError):
             client.fetch("https://www.reddit.com/r/python/comments/abc123/some_post.json")
 
-    @patch("redminer.client.requests.get")
+    @patch("reddipy.client.requests.get")
     def test_404_user_raises_user_not_found(self, mock_get):
         mock_get.return_value = _mock_response(404)
 
@@ -182,7 +182,7 @@ class TestNotFoundErrors:
         with pytest.raises(UserNotFoundError):
             client.fetch("https://www.reddit.com/user/nonexistent.json")
 
-    @patch("redminer.client.requests.get")
+    @patch("reddipy.client.requests.get")
     def test_403_without_cookie_raises_network_error(self, mock_get):
         mock_get.return_value = _mock_response(403)
 
@@ -190,7 +190,7 @@ class TestNotFoundErrors:
         with pytest.raises(NetworkError, match="authenticate"):
             client.fetch("https://www.reddit.com/r/privateSub.json")
 
-    @patch("redminer.client.requests.get")
+    @patch("reddipy.client.requests.get")
     def test_403_with_cookie_raises_subreddit_not_found(self, mock_get):
         mock_get.return_value = _mock_response(403)
 
@@ -204,7 +204,7 @@ class TestNotFoundErrors:
 # ---------------------------------------------------------------------------
 
 class TestConnectionError:
-    @patch("redminer.client.requests.get")
+    @patch("reddipy.client.requests.get")
     def test_connection_error_raises_network_error(self, mock_get):
         mock_get.side_effect = requests.ConnectionError("Connection refused")
 
@@ -212,7 +212,7 @@ class TestConnectionError:
         with pytest.raises(NetworkError):
             client.fetch("https://www.reddit.com/r/python.json")
 
-    @patch("redminer.client.requests.get")
+    @patch("reddipy.client.requests.get")
     def test_timeout_raises_network_error(self, mock_get):
         mock_get.side_effect = requests.Timeout("Timed out")
 
@@ -226,8 +226,8 @@ class TestConnectionError:
 # ---------------------------------------------------------------------------
 
 class TestFetchAllPagination:
-    @patch("redminer.client.time.sleep")
-    @patch("redminer.client.requests.get")
+    @patch("reddipy.client.time.sleep")
+    @patch("reddipy.client.requests.get")
     def test_fetch_all_paginates_correctly(self, mock_get, mock_sleep):
         page1_items = [{"id": f"p1_{i}"} for i in range(3)]
         page2_items = [{"id": f"p2_{i}"} for i in range(2)]
@@ -249,8 +249,8 @@ class TestFetchAllPagination:
 # ---------------------------------------------------------------------------
 
 class TestFetchAllRespectsLimit:
-    @patch("redminer.client.time.sleep")
-    @patch("redminer.client.requests.get")
+    @patch("reddipy.client.time.sleep")
+    @patch("reddipy.client.requests.get")
     def test_fetch_all_trims_to_limit(self, mock_get, mock_sleep):
         page_items = [{"id": f"item_{i}"} for i in range(100)]
         page = _mock_response(200, _page_json(page_items, after="t3_next"))
@@ -267,8 +267,8 @@ class TestFetchAllRespectsLimit:
 # ---------------------------------------------------------------------------
 
 class TestFetchAllStopsOnNoMore:
-    @patch("redminer.client.time.sleep")
-    @patch("redminer.client.requests.get")
+    @patch("reddipy.client.time.sleep")
+    @patch("reddipy.client.requests.get")
     def test_stops_when_after_is_none(self, mock_get, mock_sleep):
         page_items = [{"id": f"item_{i}"} for i in range(3)]
         page = _mock_response(200, _page_json(page_items, after=None))
@@ -286,7 +286,7 @@ class TestFetchAllStopsOnNoMore:
 # ---------------------------------------------------------------------------
 
 class TestSingleProxy:
-    @patch("redminer.client.requests.get")
+    @patch("reddipy.client.requests.get")
     def test_proxy_passed_to_requests(self, mock_get):
         mock_get.return_value = _mock_response(200, {"ok": True})
 
@@ -305,7 +305,7 @@ class TestSingleProxy:
 # ---------------------------------------------------------------------------
 
 class TestProxyRotation:
-    @patch("redminer.client.requests.get")
+    @patch("reddipy.client.requests.get")
     def test_proxy_file_loads_and_rotates(self, mock_get):
         mock_get.return_value = _mock_response(200, {"ok": True})
 
@@ -356,7 +356,7 @@ class TestDeadProxyCooldown:
             "https": "http://dead:8080",
         }
 
-    @patch("redminer.client.requests.get")
+    @patch("reddipy.client.requests.get")
     def test_connection_error_marks_proxy_dead(self, mock_get):
         mock_get.side_effect = requests.ConnectionError("Connection refused")
 

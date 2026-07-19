@@ -2,7 +2,7 @@
 
 from abc import ABC, abstractmethod
 
-from redminer.client import RedditClient
+from reddipy.client import RedditClient
 
 
 class BaseScraper(ABC):

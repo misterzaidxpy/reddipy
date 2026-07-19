@@ -1,7 +1,7 @@
 """RedMiner SDK Demo - Interactive walkthrough of all features."""
 
-from redminer import Reddit
-from redminer.exporters import JSONExporter, CSVExporter, ConsoleExporter
+from reddipy import Reddit
+from reddipy.exporters import JSONExporter, CSVExporter, ConsoleExporter
 import os
 
 DIVIDER = "=" * 60
@@ -40,9 +40,9 @@ def main():
             print("  No cookie provided. Exiting.")
             return
         Reddit.configure(cookie=cookie)
-        print("  Cookie saved to ~/.redminer/config.json")
+        print("  Cookie saved to ~/.reddipy/config.json")
     else:
-        print("  Using stored cookie from ~/.redminer/config.json")
+        print("  Using stored cookie from ~/.reddipy/config.json")
 
     reddit = Reddit(delay=1.0)
     print("\n  Reddit client initialized (1s delay between requests)")
@@ -237,7 +237,7 @@ def main():
     print(f"  is_configured(): {Reddit.is_configured()}")
     print("  Re-configuring with stored cookie...")
 
-    config_path = os.path.join(os.path.expanduser("~"), ".redminer", "config.json")
+    config_path = os.path.join(os.path.expanduser("~"), ".reddipy", "config.json")
     print(f"  Config location: {config_path}")
 
     # Re-configure so user doesn't lose their cookie
@@ -254,7 +254,7 @@ def main():
     print("  All 12 features tested successfully.")
     print()
     print("  SDK usage summary:")
-    print("    from redminer import Reddit")
+    print("    from reddipy import Reddit")
     print("    reddit = Reddit()")
     print("    reddit.search(query, limit, sort, time_filter, subreddit)")
     print("    reddit.post(url)")
