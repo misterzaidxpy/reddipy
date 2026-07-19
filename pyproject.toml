@@ -41,9 +41,9 @@ dev = ["pytest>=7.0"]
 reddipy = "reddipy.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/zaidkx37/redminer"
-Repository = "https://github.com/zaidkx37/redminer"
-Issues = "https://github.com/zaidkx37/redminer/issues"
+Homepage = "https://github.com/zaidkx37/reddipy"
+Repository = "https://github.com/zaidkx37/reddipy"
+Issues = "https://github.com/zaidkx37/reddipy/issues"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

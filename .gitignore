@@ -6,7 +6,9 @@ build/
 .pytest_cache/
 cookies.json
 *.cookie
+.reddipy/
 .redminer/
-config.json
 .env
 *.secret
+reddipy_*.json
+reddipy_*.csv
