@@ -4,7 +4,7 @@ import random
 import sys
 import time
 
-import requests
+from curl_cffi import requests
 
 from reddipy.exceptions import (
     NetworkError,
@@ -100,8 +100,14 @@ class RedditClient:
                     proxies=proxy_dict,
                     cookies=self._cookies or None,
                     timeout=30,
+                    # Reddit blocks non-browser TLS fingerprints (e.g. python-requests)
+                    impersonate="chrome",
                 )
-            except (requests.ConnectionError, requests.Timeout) as exc:
+            except (
+                requests.exceptions.ConnectionError,
+                requests.exceptions.Timeout,
+                requests.exceptions.ProxyError,
+            ) as exc:
                 # Mark the proxy dead if one was used
                 if proxy_dict:
                     proxy_url = proxy_dict.get("http")
@@ -116,6 +122,13 @@ class RedditClient:
                 raise NetworkError(
                     "Reddit returned 403 Forbidden. You likely need to authenticate. "
                     "Run: Reddit.configure(cookie='your_reddit_session') or use --cookie"
+                )
+
+            # Private/gold-only subs return a JSON 403; a network block returns HTML
+            if status == 403 and "json" not in resp.headers.get("content-type", ""):
+                raise NetworkError(
+                    f"Reddit blocked the request (403): {url}. "
+                    "Your cookie may be expired, or try a different proxy."
                 )
 
             # Permanent errors (not retryable)
@@ -219,8 +232,13 @@ class RedditClient:
             raise PostNotFoundError(f"Post not found ({status}): {url}")
         if "/user/" in url or "/u/" in url:
             raise UserNotFoundError(f"User not found ({status}): {url}")
-        # Default to subreddit
-        raise SubredditNotFoundError(f"Subreddit not found ({status}): {url}")
+        if "/r/" in url:
+            raise SubredditNotFoundError(f"Subreddit not found ({status}): {url}")
+        # Not a subreddit URL (e.g. /search.json): likely blocked or an expired cookie
+        raise NetworkError(
+            f"Reddit returned {status} for {url}. The request may be blocked, "
+            "or your cookie may be expired."
+        )
 
     def _log(self, message: str) -> None:
         """Print to stderr if verbose mode is on."""

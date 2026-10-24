@@ -5,7 +5,7 @@ import time
 from unittest.mock import MagicMock, patch, call
 
 import pytest
-import requests
+from curl_cffi import requests
 
 from reddipy.client import RedditClient
 from reddipy.exceptions import (
@@ -22,10 +22,11 @@ from reddipy.exceptions import (
 # Helpers
 # ---------------------------------------------------------------------------
 
-def _mock_response(status_code=200, json_data=None, raise_for_status=None):
+def _mock_response(status_code=200, json_data=None, raise_for_status=None, headers=None):
     """Build a mock requests.Response."""
     resp = MagicMock(spec=requests.Response)
     resp.status_code = status_code
+    resp.headers = headers or {"content-type": "application/json; charset=UTF-8"}
     resp.json.return_value = json_data or {}
     if raise_for_status:
         resp.raise_for_status.side_effect = raise_for_status
@@ -64,6 +65,16 @@ class TestFetchBasics:
         _, kwargs = mock_get.call_args
         assert kwargs["headers"]["User-Agent"] == "TestAgent/1.0"
         assert kwargs["params"]["limit"] == 10
+
+    @patch("reddipy.client.requests.get")
+    def test_fetch_impersonates_chrome(self, mock_get):
+        mock_get.return_value = _mock_response(200, {"ok": True})
+
+        client = RedditClient(delay=0)
+        client.fetch("https://www.reddit.com/r/python.json")
+
+        _, kwargs = mock_get.call_args
+        assert kwargs["impersonate"] == "chrome"
 
 
 # ---------------------------------------------------------------------------
@@ -198,6 +209,22 @@ class TestNotFoundErrors:
         with pytest.raises(SubredditNotFoundError):
             client.fetch("https://www.reddit.com/r/privateSub.json")
 
+    @patch("reddipy.client.requests.get")
+    def test_403_with_cookie_on_search_raises_network_error(self, mock_get):
+        mock_get.return_value = _mock_response(403)
+
+        client = RedditClient(delay=0, cookie="fake_session")
+        with pytest.raises(NetworkError, match="403"):
+            client.fetch("https://www.reddit.com/search.json")
+
+    @patch("reddipy.client.requests.get")
+    def test_403_block_page_on_subreddit_raises_network_error(self, mock_get):
+        mock_get.return_value = _mock_response(403, headers={"content-type": "text/html"})
+
+        client = RedditClient(delay=0, cookie="fake_session")
+        with pytest.raises(NetworkError, match="blocked"):
+            client.fetch("https://www.reddit.com/r/python.json")
+
 
 # ---------------------------------------------------------------------------
 # 7. connection error
@@ -206,7 +233,7 @@ class TestNotFoundErrors:
 class TestConnectionError:
     @patch("reddipy.client.requests.get")
     def test_connection_error_raises_network_error(self, mock_get):
-        mock_get.side_effect = requests.ConnectionError("Connection refused")
+        mock_get.side_effect = requests.exceptions.ConnectionError("Connection refused")
 
         client = RedditClient(delay=0)
         with pytest.raises(NetworkError):
@@ -214,7 +241,7 @@ class TestConnectionError:
 
     @patch("reddipy.client.requests.get")
     def test_timeout_raises_network_error(self, mock_get):
-        mock_get.side_effect = requests.Timeout("Timed out")
+        mock_get.side_effect = requests.exceptions.Timeout("Timed out")
 
         client = RedditClient(delay=0)
         with pytest.raises(NetworkError):
@@ -358,10 +385,30 @@ class TestDeadProxyCooldown:
 
     @patch("reddipy.client.requests.get")
     def test_connection_error_marks_proxy_dead(self, mock_get):
-        mock_get.side_effect = requests.ConnectionError("Connection refused")
+        mock_get.side_effect = requests.exceptions.ConnectionError("Connection refused")
 
         client = RedditClient(delay=0, proxy="http://flaky:8080")
         with pytest.raises(NetworkError):
             client.fetch("https://www.reddit.com/r/python.json")
 
         assert "http://flaky:8080" in client._dead_proxies
+
+    @patch("reddipy.client.requests.get")
+    def test_proxy_error_marks_proxy_dead(self, mock_get):
+        mock_get.side_effect = requests.exceptions.ProxyError("Proxy refused")
+
+        client = RedditClient(delay=0, proxy="http://flaky:8080")
+        with pytest.raises(NetworkError):
+            client.fetch("https://www.reddit.com/r/python.json")
+
+        assert "http://flaky:8080" in client._dead_proxies
+
+    @patch("reddipy.client.requests.get")
+    def test_timeout_marks_proxy_dead(self, mock_get):
+        mock_get.side_effect = requests.exceptions.Timeout("Timed out")
+
+        client = RedditClient(delay=0, proxy="http://slow:8080")
+        with pytest.raises(NetworkError):
+            client.fetch("https://www.reddit.com/r/python.json")
+
+        assert "http://slow:8080" in client._dead_proxies

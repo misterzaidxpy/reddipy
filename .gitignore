@@ -12,3 +12,4 @@ cookies.json
 *.secret
 reddipy_*.json
 reddipy_*.csv
+.playwright-mcp/

@@ -41,12 +41,6 @@ Recommended to **[install using pip](https://pypi.org/project/reddipy/)**
 pip install reddipy
 ```
 
-For SOCKS5 proxy support:
-
-```bash
-pip install "reddipy[socks]"
-```
-
 **Requirements:** Python 3.10+
 
 ## Authentication
@@ -334,8 +328,6 @@ http://5.6.7.8:3128
 socks5://9.10.11.12:1080
 ```
 
-SOCKS5 requires: `pip install "reddipy[socks]"`
-
 ### Data Models
 
 Every scraped item is a Python dataclass with typed fields. All models have a `.to_dict()` method for serialization.
@@ -526,8 +518,6 @@ http://1.2.3.4:8080
 http://5.6.7.8:3128
 socks5://9.10.11.12:1080
 ```
-
-SOCKS5 requires: `pip install "reddipy[socks]"`
 
 ### All CLI Flags
 
